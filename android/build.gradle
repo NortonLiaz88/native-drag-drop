@@ -81,3 +81,17 @@ react {
   libraryName = "LegacyDragDrop"
   codegenJavaPackageName = "com.legacydragdrop"
 }
+
+
+afterEvaluate {
+    if (tasks.findByName('generateCodegenArtifactsFromSchema')) {
+        tasks.named('generateCodegenArtifactsFromSchema').configure {
+            enabled = false
+        }
+    }
+    if (tasks.findByName('generateCodegenSchemaFromJavaScript')) {
+        tasks.named('generateCodegenSchemaFromJavaScript').configure {
+            enabled = false
+        }
+    }
+}
