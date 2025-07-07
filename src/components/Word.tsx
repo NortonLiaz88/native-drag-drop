@@ -20,6 +20,7 @@ export interface WordProps {
   isErrored?: boolean;
   isCorrect?: boolean;
   highlightColor?: string; // Não usado no código atual, mas mantido na interface
+  testID?: string;
 }
 
 export default function Word({
@@ -27,6 +28,7 @@ export default function Word({
   textStyle,
   isErrored,
   isCorrect,
+  testID,
 }: WordProps) {
   const { wordHeight, text, wordGap, wordsOfKnowledge } =
     useContext(WordContext);
@@ -45,6 +47,7 @@ export default function Word({
 
   return (
     <View
+      testID={testID}
       style={[
         styles.baseContainer, // Estilo base do container
         { height: wordHeight, margin: wordGap, marginBottom: wordGap * 2 },
