@@ -86,6 +86,8 @@ export interface DuoDragDropProps {
   onReady?: (ready: boolean) => void;
   /** Called when a user taps or drags a word to its destination */
   onDrop?: OnDropFunction;
+
+  wordsOfKnowledge: string[];
 }
 
 export type DuoDragDropRef = {

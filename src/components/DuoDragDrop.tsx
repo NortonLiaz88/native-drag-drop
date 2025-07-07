@@ -24,7 +24,6 @@ const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
     const {
       target,
       words,
-      extraData,
       renderWord,
       renderLines,
       renderPlaceholder,
@@ -37,6 +36,7 @@ const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
       animatedStyleWorklet,
       onReady,
       onDrop,
+      wordsOfKnowledge,
     } = props;
     const lineHeight = props.lineHeight || wordHeight * 1.2;
     const lineGap = lineHeight - wordHeight;
@@ -50,12 +50,12 @@ const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
       return words.map((word, index) => (
         <WordContext.Provider
           key={`${word}-${index}`}
-          value={{ wordHeight, wordGap, text: word }}
+          value={{ wordHeight, wordGap, text: word, wordsOfKnowledge }}
         >
           {renderWord?.(word, index) || <Word />}
         </WordContext.Provider>
       ));
-    }, [words, wordHeight, wordGap, extraData, renderWord]);
+    }, [words, wordHeight, wordGap, wordsOfKnowledge, renderWord]);
 
     const offsets = words.map(() => ({
       order: useSharedValue(0),
