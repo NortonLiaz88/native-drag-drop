@@ -257,7 +257,6 @@ const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
               rtl={Boolean(rtl)}
               containerWidth={containerWidth}
               gesturesDisabled={Boolean(gesturesDisabled)}
-              linesHeight={linesContainerHeight}
               lineGap={lineGap}
               wordHeight={wordHeight}
               wordGap={wordGap}
