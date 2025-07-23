@@ -149,21 +149,72 @@ const SortableWord = ({
       if (isAnimating.value) return;
       isGestureActive.value = true;
       panOrderHasChanged.value = false;
-      ctxX.value = translation.x.value;
-      ctxY.value = translation.y.value;
+      const startX = isInBank.value ? offset.originalX.value : offset.x.value;
+      const startY = isInBank.value
+        ? offset.originalY.value + wordBankOffsetY
+        : offset.y.value;
+      ctxX.value = startX;
+      ctxY.value = startY;
+      translation.x.value = startX;
+      translation.y.value = startY;
     })
     .onChange((event) => {
       'worklet';
-      // MUDANÇA DRASTICA: A única responsabilidade do onChange é mover o item com o dedo.
-      // Nenhuma lógica de array (.filter, .sort) é executada aqui.
       translation.x.value = ctxX.value + event.translationX;
       translation.y.value = ctxY.value + event.translationY;
+
+      // Lógica de reordenação em tempo real (igual à sua original)
+      // Agora funciona porque 'reorder', 'remove', etc. são worklets síncronos.
+      const answeredOffsets = offsets
+        .filter((o) => o.order.value !== -1)
+        .sort((a, b) => a.order.value - b.order.value);
+      const fromIndex = answeredOffsets.findIndex((o) => o === offset);
+
+      if (isInBank.value && translation.y.value < linesHeight) {
+        offset.order.value = lastOrder(offsets);
+        panOrderHasChanged.value = true;
+      } else if (!isInBank.value && translation.y.value > linesHeight) {
+        remove(offsets, index);
+        offset.order.value = -1;
+        panOrderHasChanged.value = true;
+      } else if (!isInBank.value) {
+        const toIndex = answeredOffsets.findIndex(
+          (o) =>
+            o !== offset &&
+            between(
+              translation.x.value,
+              o.x.value,
+              o.x.value + o.width.value,
+              true
+            ) &&
+            between(
+              translation.y.value,
+              o.y.value,
+              o.y.value + o.height.value,
+              true
+            )
+        );
+        if (toIndex !== -1 && fromIndex !== toIndex) {
+          reorder(offsets, fromIndex, toIndex);
+          panOrderHasChanged.value = true;
+        }
+      }
     })
     .onEnd(() => {
       'worklet';
-      // Ao soltar, executa toda a lógica de cálculo de uma vez.
-      handlePanDrop();
+      // Ao soltar, disparamos o cálculo de layout nativo, que é assíncrono.
+      calculateLayout(
+        offsets,
+        containerWidth,
+        wordHeight,
+        wordGap,
+        lineGap,
+        rtl
+      );
       isGestureActive.value = false;
+      if (panOrderHasChanged.value) {
+        runOnJS(emitOnDrop)();
+      }
     });
 
   // A lógica do Tap Gesture permanece a mesma, pois ela já era "atômica".
