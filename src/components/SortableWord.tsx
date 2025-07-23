@@ -1,5 +1,5 @@
 import { memo, type ReactElement, useCallback } from 'react';
-import { StyleSheet, type ViewStyle } from 'react-native';
+import { type ViewStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -13,7 +13,6 @@ import {
   lastOrder,
   type Offset,
   remove,
-  useVector, // useVector não é mais usado, mas pode ser mantido no import
 } from '../compute/Layout';
 import type {
   DuoAnimatedStyleWorklet,
