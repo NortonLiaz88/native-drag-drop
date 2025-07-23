@@ -1,6 +1,6 @@
 {
   "name": "react-native-legacy-drag-drop",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "react-native-legacy-drag-drop",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
