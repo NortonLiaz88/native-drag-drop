@@ -1,4 +1,4 @@
-import { memo, type ReactElement, useCallback } from 'react';
+import { type ReactElement, useCallback } from 'react';
 import { StyleSheet, type ViewStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -243,4 +243,4 @@ const SortableWord = ({
   );
 };
 
-export default memo(SortableWord);
+export default SortableWord;

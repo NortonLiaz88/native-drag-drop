@@ -130,6 +130,7 @@ export default function App() {
                 lineStyle={{ borderColor: '#CCC' }}
               />
             )}
+            wordsOfKnowledge={[]}
           />
           {/* Os botões de controle do componente principal não precisam de mudanças */}
           <Button
