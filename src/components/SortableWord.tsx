@@ -78,7 +78,6 @@ const SortableWord = ({
   const handlePanDrop = () => {
     'worklet';
     panOrderHasChanged.value = false;
-
     const answeredOffsets = offsets
       .filter((o) => o.order.value !== -1)
       .sort((a, b) => a.order.value - b.order.value);
@@ -97,25 +96,40 @@ const SortableWord = ({
     }
     // Lógica 3: Reordenar palavras que JÁ ESTÃO na área de resposta.
     else if (!isInBank.value) {
-      const toIndex = answeredOffsets.findIndex(
-        (o) =>
-          o !== offset &&
-          between(
-            translation.x.value,
-            o.x.value,
-            o.x.value + o.width.value,
-            true
-          ) &&
-          between(
-            translation.y.value,
-            o.y.value,
-            o.y.value + o.height.value,
-            true
-          )
-      );
-      if (toIndex !== -1 && fromIndex !== toIndex) {
-        panOrderHasChanged.value = true;
-        reorder(offsets, fromIndex, toIndex);
+      for (let i = 0; i < answeredOffsets.length; i++) {
+        const o = answeredOffsets[i]!;
+        if (o === offset) continue;
+
+        const x = o.x.value;
+        const y = o.y.value;
+        const width = o.width.value;
+
+        // =================================================================
+        // ADICIONE ESTE CONSOLE.WARN PARA DEPURAÇÃO
+        // =================================================================
+        console.warn(
+          `[DEBUG] Dragging at (${Math.round(translation.x.value)}, ${Math.round(translation.y.value)}). Checking word at (${Math.round(x)}, ${Math.round(y)})`
+        );
+
+        const isBetweenX = between(translation.x.value, x, x + width, true);
+        const isBetweenY = between(
+          translation.y.value,
+          y,
+          y + wordHeight,
+          true
+        );
+
+        if (isBetweenX && isBetweenY) {
+          // Se você NUNCA vir esta mensagem, a condição 'between' está falhando.
+          console.warn('[DEBUG] COLISÃO DETECTADA!');
+
+          const toIndex = i;
+          if (fromIndex !== toIndex) {
+            panOrderHasChanged.value = true;
+            reorder(offsets, fromIndex, toIndex);
+          }
+          break; // Sai do loop após a primeira colisão encontrada
+        }
       }
     }
 
