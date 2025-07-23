@@ -1,85 +1,15 @@
 import type Animated from 'react-native-reanimated';
 import { useSharedValue } from 'react-native-reanimated';
-import { NativeModules } from 'react-native';
 
 // =================================================================
-// PARTE 1: ACESSO SEGURO AO MÓDULO NATIVO
+// ARQUIVO 100% JAVASCRIPT/REANIMATED - MÁXIMA PERFORMANCE PARA UI
 // =================================================================
 
-const LINKING_ERROR = `The package 'react-native-legacy-drag-drop' doesn't seem to be linked. Make sure you rebuilt the app.`;
-
-const NativeLegacyDragDrop = NativeModules.LegacyDragDrop
-  ? NativeModules.LegacyDragDrop
-  : new Proxy(
-      {},
-      {
-        get() {
-          throw new Error(LINKING_ERROR);
-        },
-      }
-    );
-
-// =================================================================
-// PARTE 2: TIPOS E HELPERS DO REANIMATED
-// =================================================================
-
-// These util functions were extracted from: wcadillon/react-native-redash
-
-/**
- * @worklet
- */
-export const move = <T>(input: T[], from: number, to: number) => {
-  'worklet';
-  const offsets = input.slice();
-  while (from < 0) {
-    from += offsets.length;
-  }
-  while (to < 0) {
-    to += offsets.length;
-  }
-  if (to >= offsets.length) {
-    let k = to - offsets.length;
-    while (k-- + 1) {
-      offsets.push();
-    }
-  }
-  offsets.splice(to, 0, offsets.splice(from, 1)[0]!);
-  return offsets;
-};
-
-/**
- * @summary Returns true if node is within lowerBound and upperBound.
- * @worklet
- */
-export const between = (
-  value: number,
-  lowerBound: number,
-  upperBound: number,
-  inclusive = true
-) => {
-  'worklet';
-  if (inclusive) {
-    return value >= lowerBound && value <= upperBound;
-  }
-  return value > lowerBound && value < upperBound;
-};
-
-/**
- * @summary Type representing a vector
- * @example
-   export interface Vector<T = number> {
-    x: T;
-    y: T;
-  }
- */
 export interface Vector<T = number> {
   x: T;
   y: T;
 }
 
-/**
- * @summary Returns a vector of shared values
- */
 export const useVector = (
   x1 = 0,
   y1?: number
@@ -113,6 +43,31 @@ const byOrder = (a: Offset, b: Offset) => {
   return a.order.value - b.order.value;
 };
 
+export const move = <T>(input: T[], from: number, to: number) => {
+  'worklet';
+  const newArray = [...input];
+  while (from < 0) from += newArray.length;
+  while (to < 0) to += newArray.length;
+  if (to >= newArray.length) {
+    let k = to - newArray.length;
+    while (k-- + 1) newArray.push(undefined as any);
+  }
+  newArray.splice(to, 0, newArray.splice(from, 1)[0]!);
+  return newArray;
+};
+
+export const between = (
+  value: number,
+  lowerBound: number,
+  upperBound: number,
+  inclusive = true
+) => {
+  'worklet';
+  return inclusive
+    ? value >= lowerBound && value <= upperBound
+    : value > lowerBound && value < upperBound;
+};
+
 export const lastOrder = (input: Offset[]) => {
   'worklet';
   return input.filter(isNotInBank).length;
@@ -121,10 +76,8 @@ export const lastOrder = (input: Offset[]) => {
 export const remove = (input: Offset[], index: number) => {
   'worklet';
   const offsets = input
-    .filter((_, i) => i !== index)
-    .filter(isNotInBank)
+    .filter((o) => o.order.value !== -1 && o !== input[index])
     .sort(byOrder);
-
   for (let i = 0; i < offsets.length; i++) {
     offsets[i]!.order.value = i;
   }
@@ -139,6 +92,7 @@ export const reorder = (input: Offset[], from: number, to: number) => {
   }
 };
 
+// MUDANÇA: 'calculateLayout' agora é a implementação 100% JS, síncrona e worklet.
 export const calculateLayout = (
   input: Offset[],
   containerWidth: number,
@@ -149,46 +103,25 @@ export const calculateLayout = (
 ) => {
   'worklet';
   const offsets = input.filter(isNotInBank).sort(byOrder);
-
   if (offsets.length === 0) {
     return;
   }
   let lineNumber = 0;
   let lineBreak = 0;
   for (let i = 0; i < offsets.length; i++) {
-    const offset = offsets[i];
+    const offset = offsets[i]!;
     const total = offsets
       .slice(lineBreak, i)
       .reduce((acc, o) => acc + o.width.value + wordGap / 2, 0);
-    if (total + offset!.width.value > containerWidth) {
+    if (total + offset.width.value > containerWidth) {
       lineNumber += 1;
       lineBreak = i;
-      offset!.x.value = rtl ? containerWidth - offset!.width.value : 0;
+      offset.x.value = rtl ? containerWidth - offset.width.value : 0;
     } else {
-      offset!.x.value = rtl
-        ? containerWidth - total - offset!.width.value
+      offset.x.value = rtl
+        ? containerWidth - total - offset.width.value
         : total;
     }
-    offset!.y.value = (wordHeight + lineGap) * lineNumber + lineGap / 2;
+    offset.y.value = (wordHeight + lineGap) * lineNumber + lineGap / 2;
   }
-};
-
-export const calculateLayoutWithNative = (
-  orders: number[],
-  widths: number[],
-  containerWidth: number,
-  wordHeight: number,
-  wordGap: number,
-  lineGap: number,
-  rtl: boolean
-): Array<{ x: number; y: number }> => {
-  return NativeLegacyDragDrop.calculateLayout(
-    orders,
-    widths,
-    containerWidth,
-    wordHeight,
-    wordGap,
-    lineGap,
-    rtl
-  );
 };

@@ -1,11 +1,12 @@
-import { type ReactElement, useCallback } from 'react';
-import { StyleSheet, type ViewStyle } from 'react-native';
+import { memo, type ReactElement, useCallback } from 'react';
+import { type ViewStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   useDerivedValue,
-  withTiming,
   runOnJS,
+  withTiming,
+  Easing,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import {
@@ -54,11 +55,11 @@ const SortableWord = ({
   lineGap,
   onDrop,
 }: SortableWordProps) => {
-  const offset = offsets[index];
+  const offset = offsets[index]!;
   const isGestureActive = useSharedValue(false);
   const isAnimating = useSharedValue(false);
   const translation = useVector();
-  const isInBank = useDerivedValue(() => offset!.order.value === -1);
+  const isInBank = useDerivedValue(() => offset.order.value === -1);
   const ctxX = useSharedValue(0);
   const ctxY = useSharedValue(0);
   const panOrderHasChanged = useSharedValue(false);
@@ -67,180 +68,198 @@ const SortableWord = ({
     () =>
       onDrop?.({
         index,
-        destination: offset!.order.value === -1 ? 'bank' : 'answered',
-        position: offset!.order.value,
+        destination: offset.order.value === -1 ? 'bank' : 'answered',
+        position: offset.order.value,
       }),
     [index, offset, onDrop]
   );
 
+  // MUDANÇA: Toda a lógica de "soltar" foi movida para esta função
+  const handlePanDrop = () => {
+    'worklet';
+    panOrderHasChanged.value = false;
+
+    const answeredOffsets = offsets
+      .filter((o) => o.order.value !== -1)
+      .sort((a, b) => a.order.value - b.order.value);
+    const fromIndex = answeredOffsets.findIndex((o) => o === offset);
+
+    // Lógica 1: Se a palavra foi arrastada para FORA da área de resposta, mande-a para o banco.
+    if (!isInBank.value && translation.y.value > linesHeight) {
+      panOrderHasChanged.value = true;
+      remove(offsets, index);
+      offset.order.value = -1;
+    }
+    // Lógica 2: Se a palavra veio DO BANCO para a área de resposta.
+    else if (isInBank.value) {
+      panOrderHasChanged.value = true;
+      offset.order.value = lastOrder(offsets);
+    }
+    // Lógica 3: Reordenar palavras que JÁ ESTÃO na área de resposta.
+    else if (!isInBank.value) {
+      const toIndex = answeredOffsets.findIndex(
+        (o) =>
+          o !== offset &&
+          between(
+            translation.x.value,
+            o.x.value,
+            o.x.value + o.width.value,
+            true
+          ) &&
+          between(
+            translation.y.value,
+            o.y.value,
+            o.y.value + o.height.value,
+            true
+          )
+      );
+      if (toIndex !== -1 && fromIndex !== toIndex) {
+        panOrderHasChanged.value = true;
+        reorder(offsets, fromIndex, toIndex);
+      }
+    }
+
+    // Após qualquer mudança de ordem, disparamos o cálculo de layout.
+    // Como a versão JS é síncrona, isso acontece imediatamente.
+    calculateLayout(offsets, containerWidth, wordHeight, wordGap, lineGap, rtl);
+
+    if (panOrderHasChanged.value) {
+      runOnJS(emitOnDrop)();
+    }
+  };
+
   const panGesture = Gesture.Pan()
+    .enabled(!gesturesDisabled)
     .onStart(() => {
-      if (isAnimating.value) {
-        return;
-      }
+      'worklet';
+      if (isAnimating.value) return;
+      isGestureActive.value = true;
       panOrderHasChanged.value = false;
-
-      if (isInBank.value) {
-        translation.x.value = offset!.originalX.value;
-        translation.y.value = offset!.originalY.value + wordBankOffsetY;
-      } else {
-        translation.x.value = offset!.x.value;
-        translation.y.value = offset!.y.value;
-      }
-
       ctxX.value = translation.x.value;
       ctxY.value = translation.y.value;
     })
-    .onChange(({ translationX, translationY }) => {
-      isGestureActive.value = true;
-      translation.x.value = ctxX.value + translationX;
-      translation.y.value = ctxY.value + translationY;
-
-      if (isInBank.value && translation.y.value < linesHeight) {
-        offset!.order.value = lastOrder(offsets);
-        calculateLayout(
-          offsets,
-          containerWidth,
-          wordHeight,
-          wordGap,
-          lineGap,
-          rtl
-        );
-        panOrderHasChanged.value = true;
-      } else if (
-        !isInBank.value &&
-        translation.y.value > linesHeight - wordHeight / 2
-      ) {
-        offset!.order.value = -1;
-        remove(offsets, index);
-        calculateLayout(
-          offsets,
-          containerWidth,
-          wordHeight,
-          wordGap,
-          lineGap,
-          rtl
-        );
-        panOrderHasChanged.value = true;
-      }
-
-      for (let i = 0; i < offsets.length; i++) {
-        const o = offsets[i];
-        if (i === index && o!.order.value !== -1) {
-          continue;
-        }
-        const isItemInBank = o!.order.value === -1;
-        const x = isItemInBank ? o!.originalX.value : o!.x.value;
-        const y = isItemInBank
-          ? o!.originalY.value + wordBankOffsetY
-          : o!.y.value;
-        if (
-          between(translation.x.value, x, x + o!.width.value, false) &&
-          between(translation.y.value, y, y + wordHeight) && // NOTE: check y value when interacting with bottom
-          offset!.order.value !== o!.order.value
-        ) {
-          reorder(offsets, offset!.order.value, o!.order.value);
-          calculateLayout(
-            offsets,
-            containerWidth,
-            wordHeight,
-            wordGap,
-            lineGap,
-            rtl
-          );
-          panOrderHasChanged.value = true;
-          break;
-        }
-      }
+    .onChange((event) => {
+      'worklet';
+      // MUDANÇA DRASTICA: A única responsabilidade do onChange é mover o item com o dedo.
+      // Nenhuma lógica de array (.filter, .sort) é executada aqui.
+      translation.x.value = ctxX.value + event.translationX;
+      translation.y.value = ctxY.value + event.translationY;
     })
     .onEnd(() => {
-      isAnimating.value = true;
-      translation.x.value = offset!.x.value;
-      translation.y.value = offset!.y.value;
+      'worklet';
+      // Ao soltar, executa toda a lógica de cálculo de uma vez.
+      handlePanDrop();
       isGestureActive.value = false;
-      if (panOrderHasChanged.value) {
-        runOnJS(emitOnDrop)();
-      }
-      panOrderHasChanged.value = false;
     });
 
-  const translateX = useDerivedValue(() => {
-    if (isGestureActive.value) {
-      return translation.x.value;
+  // A lógica do Tap Gesture permanece a mesma, pois ela já era "atômica".
+  const handleTap = () => {
+    'worklet';
+    if (isInBank.value) {
+      offset.order.value = lastOrder(offsets);
+    } else {
+      remove(offsets, index);
+      offset.order.value = -1;
     }
-    return withTiming(
-      isInBank.value ? offset!.originalX.value : offset!.x.value,
-      { duration: 250 },
-      () => (isAnimating.value = false)
-    );
-  });
+    calculateLayout(offsets, containerWidth, wordHeight, wordGap, lineGap, rtl);
+    runOnJS(emitOnDrop)();
+  };
 
-  const translateY = useDerivedValue(() => {
-    if (isGestureActive.value) {
-      return translation.y.value;
-    }
+  const tapGesture = Gesture.Tap()
+    .enabled(!gesturesDisabled)
+    .onStart(() => {
+      'worklet';
+      isAnimating.value = true;
+      handleTap();
+    });
 
-    return withTiming(
-      isInBank.value
-        ? offset!.originalY.value + wordBankOffsetY
-        : offset!.y.value,
-      { duration: 250 },
-      () => (isAnimating.value = false)
-    );
-  });
+  // const animatedStyle = useAnimatedStyle(() => {
+  //   'worklet';
+  //   const targetX = isInBank.value ? offset.originalX.value : offset.x.value;
+  //   const targetY = isInBank.value
+  //     ? offset.originalY.value + wordBankOffsetY
+  //     : offset.y.value;
 
-  const style = useAnimatedStyle(() => {
-    const style: DuoWordAnimatedStyle & ViewStyle = {
+  //   // MUDANÇA: 'withTiming' foi removido.
+  //   // Agora, a posição é atualizada instantaneamente.
+  //   const x = isGestureActive.value ? translation.x.value : targetX;
+  //   const y = isGestureActive.value ? translation.y.value : targetY;
+
+  //   // Callback para resetar o estado de animação (ainda útil)
+  //   if (!isGestureActive.value) {
+  //     isAnimating.value = false;
+  //   }
+
+  //   const style: ViewStyle = {
+  //     position: 'absolute',
+  //     top: 0,
+  //     left: 0,
+  //     zIndex:
+  //       isGestureActive.value || isAnimating.value
+  //         ? 100
+  //         : Math.max(1, offset.order.value),
+  //     width: offset.width.value,
+  //     height: wordHeight,
+  //     transform: [{ translateX: x }, { translateY: y }],
+  //   };
+  //   return (
+  //     animatedStyleWorklet?.(
+  //       style as DuoWordAnimatedStyle,
+  //       isGestureActive.value
+  //     ) || style
+  //   );
+  // });
+
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    const targetX = isInBank.value ? offset.originalX.value : offset.x.value;
+    const targetY = isInBank.value
+      ? offset.originalY.value + wordBankOffsetY
+      : offset.y.value;
+
+    // MUDANÇA: Adicionamos o `withTiming` de volta, mas com uma configuração customizada.
+    const animationConfig = {
+      duration: 150, // Animação bem mais curta e rápida
+      easing: Easing.out(Easing.quad), // Começa rápido e desacelera suavemente
+    };
+
+    const x = isGestureActive.value
+      ? translation.x.value
+      : withTiming(targetX, animationConfig);
+
+    const y = isGestureActive.value
+      ? translation.y.value
+      : withTiming(targetY, animationConfig, (finished) => {
+          if (finished) {
+            isAnimating.value = false;
+          }
+        });
+
+    const style: ViewStyle = {
       position: 'absolute',
       top: 0,
-      left: -1,
+      left: 0,
       zIndex:
         isGestureActive.value || isAnimating.value
           ? 100
-          : Math.max(1, offset!.order.value),
-      width: offset!.width.value + 2,
+          : Math.max(1, offset.order.value),
+      width: offset.width.value,
       height: wordHeight,
-      transform: [
-        { translateX: translateX.value },
-        { translateY: translateY.value },
-      ],
+      transform: [{ translateX: x }, { translateY: y }],
     };
-    return (animatedStyleWorklet?.(style, isGestureActive.value) ||
-      style) as ViewStyle;
-  });
-
-  const tapGesture = Gesture.Tap().onStart(() => {
-    if (isInBank.value) {
-      offset!.order.value = lastOrder(offsets);
-    } else {
-      offset!.order.value = -1;
-      remove(offsets, index);
-    }
-
-    isAnimating.value = true;
-
-    calculateLayout(offsets, containerWidth, wordHeight, wordGap, lineGap, rtl);
-    translation.x.value = offset!.x.value;
-    translation.y.value = offset!.y.value;
-
-    runOnJS(emitOnDrop)();
+    return (
+      animatedStyleWorklet?.(
+        style as DuoWordAnimatedStyle,
+        isGestureActive.value
+      ) || style
+    );
   });
 
   return (
-    <Animated.View style={style}>
-      {gesturesDisabled ? (
-        <Animated.View style={StyleSheet.absoluteFill}>
-          {children}
-        </Animated.View>
-      ) : (
-        <GestureDetector gesture={Gesture.Race(tapGesture, panGesture)}>
-          <Animated.View style={StyleSheet.absoluteFill}>
-            {children}
-          </Animated.View>
-        </GestureDetector>
-      )}
-    </Animated.View>
+    <GestureDetector gesture={Gesture.Race(tapGesture, panGesture)}>
+      <Animated.View style={animatedStyle}>{children}</Animated.View>
+    </GestureDetector>
   );
 };
 
-export default SortableWord;
+export default memo(SortableWord);

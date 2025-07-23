@@ -1,10 +1,9 @@
-import type { JSX } from 'react';
-import { useRef } from 'react';
+import { useCallback, useRef, type JSX } from 'react';
 import {
+  View,
+  type LayoutRectangle,
   type StyleProp,
   type ViewStyle,
-  type LayoutRectangle,
-  View,
 } from 'react-native';
 import type { Offset } from '../compute/Layout';
 import { styles } from '../utils/styles';
@@ -24,10 +23,6 @@ interface ComputeWordLayoutProps {
   wordGap: number;
 }
 
-/**
- * This component renders with 0 opacity in order to
- * compute word positioning & container width
- */
 export function ComputeWordLayout({
   wordGap,
   children,
@@ -39,58 +34,73 @@ export function ComputeWordLayout({
   wordBankAlignment,
   wordBankOffsetY,
 }: ComputeWordLayoutProps) {
-  const calculatedOffsets = useRef<LayoutRectangle[]>([]);
-  const offsetStyles = useRef<StyleProp<ViewStyle>[]>([]);
+  const layouts = useRef<Record<number, LayoutRectangle>>({}).current;
+
+  // MUDANÇA: Criamos uma função centralizada que só executa quando todas as medições terminam.
+  const processLayouts = useCallback(() => {
+    // Pega todos os valores de layout de uma vez.
+    const allLayouts = Object.values(layouts);
+
+    // MUDANÇA: Primeiro loop foi substituído por uma operação mais direta.
+    const yPositions = new Set(allLayouts.map((l) => l.y));
+    const numLines = yPositions.size;
+
+    const numLinesSize = numLines < 3 ? numLines + 1 : numLines;
+    const linesHeight = numLinesSize * lineHeight;
+
+    const finalWordStyles: StyleProp<ViewStyle>[] = [];
+
+    // MUDANÇA: A lógica de cálculo agora está em um único loop.
+    children.forEach((_, index) => {
+      const { x, y, width } = layouts[index]!;
+      const offset = offsets[index]!;
+
+      // Atualiza os shared values do Reanimated
+      offset.order.value = -1;
+      offset.width.value = width;
+      offset.originalX.value = x;
+      offset.originalY.value = y + linesHeight + wordBankOffsetY;
+
+      // Cria os estilos para os placeholders
+      finalWordStyles[index] = {
+        position: 'absolute',
+        height: wordHeight,
+        top: y + linesHeight + wordBankOffsetY * 2,
+        left: x + wordGap,
+        width: width - wordGap * 2,
+      };
+    });
+
+    // MUDANÇA: 'onLayout' é chamado diretamente, sem 'setTimeout'.
+    onLayout({
+      numLines: numLines,
+      wordStyles: finalWordStyles,
+    });
+  }, [
+    layouts,
+    children.length,
+    lineHeight,
+    wordBankOffsetY,
+    wordHeight,
+    wordGap,
+    offsets,
+    onLayout,
+  ]);
 
   return (
     <View
       style={[styles.computeWordLayoutContainer, styles[wordBankAlignment]]}
-      onLayout={(e) => {
-        onContainerWidth(e.nativeEvent.layout.width);
-      }}
+      onLayout={(e) => onContainerWidth(e.nativeEvent.layout.width)}
     >
       {children.map((child, index) => {
         return (
           <View
             key={`compute.${index}`}
             onLayout={(e) => {
-              const { x, y, width, height } = e.nativeEvent.layout;
-              calculatedOffsets.current[index] = { width, height, x, y };
-
-              if (
-                Object.keys(calculatedOffsets.current).length ===
-                children.length
-              ) {
-                const numLines = new Set();
-                for (const index in calculatedOffsets.current) {
-                  const { y } = calculatedOffsets.current[index]!;
-                  numLines.add(y);
-                }
-                const numLinesSize =
-                  numLines.size < 3 ? numLines.size + 1 : numLines.size;
-                const linesHeight = numLinesSize * lineHeight;
-                for (const index in calculatedOffsets.current) {
-                  const { x, y, width } = calculatedOffsets.current[index]!;
-                  const offset = offsets[index];
-                  offset!.order.value = -1;
-                  offset!.width.value = width;
-                  offset!.originalX.value = x;
-                  offset!.originalY.value = y + linesHeight + wordBankOffsetY;
-
-                  offsetStyles.current[index] = {
-                    position: 'absolute',
-                    height: wordHeight,
-                    top: y + linesHeight + wordBankOffsetY * 2,
-                    left: x + wordGap,
-                    width: width - wordGap * 2,
-                  };
-                }
-                setTimeout(() => {
-                  onLayout({
-                    numLines: numLines.size,
-                    wordStyles: offsetStyles.current,
-                  });
-                }, 16);
+              // Apenas armazena o layout e verifica se terminamos.
+              layouts[index] = e.nativeEvent.layout;
+              if (Object.keys(layouts).length === children.length) {
+                processLayouts();
               }
             }}
           >

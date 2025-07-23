@@ -46,6 +46,16 @@ const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
     } | null>(null);
     const [containerWidth, setContainerWidth] = useState(0);
 
+    const offsets = words.map(() => ({
+      order: useSharedValue(0),
+      width: useSharedValue(0),
+      height: useSharedValue(0),
+      x: useSharedValue(0),
+      y: useSharedValue(0),
+      originalX: useSharedValue(0),
+      originalY: useSharedValue(0),
+    }));
+
     const wordElements = useMemo(() => {
       return words.map((word, index) => (
         <WordContext.Provider
@@ -57,24 +67,12 @@ const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
       ));
     }, [words, wordHeight, wordGap, wordsOfKnowledge, renderWord]);
 
-    const offsets = words.map(() => ({
-      order: useSharedValue(0),
-      width: useSharedValue(0),
-      height: useSharedValue(0),
-      x: useSharedValue(0),
-      y: useSharedValue(0),
-      originalX: useSharedValue(0),
-      originalY: useSharedValue(0),
-    }));
-
     // MUDANÇA: A função não é mais async
     const reorderWordsFn = () => {
       if (!layout || containerWidth === 0) {
-        console.warn('[DuoDragDrop] Layout not initialized.');
         return;
       }
       if (offsets.some((o) => o.width.value <= 0)) {
-        console.warn('[DuoDragDrop] Widths not defined.');
         return;
       }
 
@@ -85,7 +83,6 @@ const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
         offsets[i]!.order.value = newOrders[i]!;
       }
 
-      // MUDANÇA: A chamada é direta, sem await e sem processar resultado.
       calculateLayout(
         offsets,
         containerWidth,
@@ -106,6 +103,7 @@ const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
           if (offset.order.value !== -1) {
             answeredWords.push({ word, order: offset.order.value });
           } else {
+            // MUDANÇA 3 (A MAIS IMPORTANTE): Envolver o componente principal com React.memo
             bankWords.push({ word, order: offset.order.value });
           }
         }
@@ -276,4 +274,4 @@ const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
   }
 );
 
-export default DuoDragDrop;
+export default React.memo(DuoDragDrop);

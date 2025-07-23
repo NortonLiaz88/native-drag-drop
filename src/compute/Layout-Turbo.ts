@@ -118,16 +118,27 @@ export const lastOrder = (input: Offset[]) => {
   return input.filter(isNotInBank).length;
 };
 
-export const remove = (input: Offset[], index: number) => {
+export const remove = (
+  input: Offset[],
+  index: number,
+  containerWidth: number,
+  wordHeight: number,
+  wordGap: number,
+  lineGap: number,
+  rtl: boolean
+) => {
   'worklet';
-  const offsets = input
-    .filter((_, i) => i !== index)
-    .filter(isNotInBank)
-    .sort(byOrder);
-
-  for (let i = 0; i < offsets.length; i++) {
-    offsets[i]!.order.value = i;
+  // Lógica de re-indexação (já estava correta)
+  const answered = input.filter(
+    (o) => o.order.value !== -1 && o !== input[index]
+  );
+  const sorted = answered.sort((a, b) => a.order.value - b.order.value);
+  for (let i = 0; i < sorted.length; i++) {
+    sorted[i]!.order.value = i;
   }
+
+  // MUDANÇA: Agora, a própria função 'remove' dispara o recálculo de layout
+  calculateLayout(input, containerWidth, wordHeight, wordGap, lineGap, rtl);
 };
 
 export const reorder = (input: Offset[], from: number, to: number) => {

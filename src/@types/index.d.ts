@@ -27,9 +27,9 @@ export type DuoWordAnimatedStyle = {
 };
 
 export type DuoAnimatedStyleWorklet = (
-  style: DuoWordAnimatedStyle & ViewStyle,
-  isGestureActive: boolean
-) => AnimatedStyle<ViewStyle>;
+  base: AnimateStyle<ViewStyle>,
+  isActive: boolean
+) => AnimateStyle<ViewStyle>;
 
 export type DropEvent = {
   index: number;
