@@ -75,72 +75,72 @@ const SortableWord = ({
   );
 
   // MUDANÇA: Toda a lógica de "soltar" foi movida para esta função
-  const handlePanDrop = () => {
-    'worklet';
-    panOrderHasChanged.value = false;
-    const answeredOffsets = offsets
-      .filter((o) => o.order.value !== -1)
-      .sort((a, b) => a.order.value - b.order.value);
-    const fromIndex = answeredOffsets.findIndex((o) => o === offset);
+  // const handlePanDrop = () => {
+  //   'worklet';
+  //   panOrderHasChanged.value = false;
+  //   const answeredOffsets = offsets
+  //     .filter((o) => o.order.value !== -1)
+  //     .sort((a, b) => a.order.value - b.order.value);
+  //   const fromIndex = answeredOffsets.findIndex((o) => o === offset);
 
-    // Lógica 1: Se a palavra foi arrastada para FORA da área de resposta, mande-a para o banco.
-    if (!isInBank.value && translation.y.value > linesHeight) {
-      panOrderHasChanged.value = true;
-      remove(offsets, index);
-      offset.order.value = -1;
-    }
-    // Lógica 2: Se a palavra veio DO BANCO para a área de resposta.
-    else if (isInBank.value) {
-      panOrderHasChanged.value = true;
-      offset.order.value = lastOrder(offsets);
-    }
-    // Lógica 3: Reordenar palavras que JÁ ESTÃO na área de resposta.
-    else if (!isInBank.value) {
-      for (let i = 0; i < answeredOffsets.length; i++) {
-        const o = answeredOffsets[i]!;
-        if (o === offset) continue;
+  //   // Lógica 1: Se a palavra foi arrastada para FORA da área de resposta, mande-a para o banco.
+  //   if (!isInBank.value && translation.y.value > linesHeight) {
+  //     panOrderHasChanged.value = true;
+  //     remove(offsets, index);
+  //     offset.order.value = -1;
+  //   }
+  //   // Lógica 2: Se a palavra veio DO BANCO para a área de resposta.
+  //   else if (isInBank.value) {
+  //     panOrderHasChanged.value = true;
+  //     offset.order.value = lastOrder(offsets);
+  //   }
+  //   // Lógica 3: Reordenar palavras que JÁ ESTÃO na área de resposta.
+  //   else if (!isInBank.value) {
+  //     for (let i = 0; i < answeredOffsets.length; i++) {
+  //       const o = answeredOffsets[i]!;
+  //       if (o === offset) continue;
 
-        const x = o.x.value;
-        const y = o.y.value;
-        const width = o.width.value;
+  //       const x = o.x.value;
+  //       const y = o.y.value;
+  //       const width = o.width.value;
 
-        // =================================================================
-        // ADICIONE ESTE CONSOLE.WARN PARA DEPURAÇÃO
-        // =================================================================
-        console.warn(
-          `[DEBUG] Dragging at (${Math.round(translation.x.value)}, ${Math.round(translation.y.value)}). Checking word at (${Math.round(x)}, ${Math.round(y)})`
-        );
+  //       // =================================================================
+  //       // ADICIONE ESTE CONSOLE.WARN PARA DEPURAÇÃO
+  //       // =================================================================
+  //       console.warn(
+  //         `[DEBUG] Dragging at (${Math.round(translation.x.value)}, ${Math.round(translation.y.value)}). Checking word at (${Math.round(x)}, ${Math.round(y)})`
+  //       );
 
-        const isBetweenX = between(translation.x.value, x, x + width, true);
-        const isBetweenY = between(
-          translation.y.value,
-          y,
-          y + wordHeight,
-          true
-        );
+  //       const isBetweenX = between(translation.x.value, x, x + width, true);
+  //       const isBetweenY = between(
+  //         translation.y.value,
+  //         y,
+  //         y + wordHeight,
+  //         true
+  //       );
 
-        if (isBetweenX && isBetweenY) {
-          // Se você NUNCA vir esta mensagem, a condição 'between' está falhando.
-          console.warn('[DEBUG] COLISÃO DETECTADA!');
+  //       if (isBetweenX && isBetweenY) {
+  //         // Se você NUNCA vir esta mensagem, a condição 'between' está falhando.
+  //         console.warn('[DEBUG] COLISÃO DETECTADA!');
 
-          const toIndex = i;
-          if (fromIndex !== toIndex) {
-            panOrderHasChanged.value = true;
-            reorder(offsets, fromIndex, toIndex);
-          }
-          break; // Sai do loop após a primeira colisão encontrada
-        }
-      }
-    }
+  //         const toIndex = i;
+  //         if (fromIndex !== toIndex) {
+  //           panOrderHasChanged.value = true;
+  //           reorder(offsets, fromIndex, toIndex);
+  //         }
+  //         break; // Sai do loop após a primeira colisão encontrada
+  //       }
+  //     }
+  //   }
 
-    // Após qualquer mudança de ordem, disparamos o cálculo de layout.
-    // Como a versão JS é síncrona, isso acontece imediatamente.
-    calculateLayout(offsets, containerWidth, wordHeight, wordGap, lineGap, rtl);
+  //   // Após qualquer mudança de ordem, disparamos o cálculo de layout.
+  //   // Como a versão JS é síncrona, isso acontece imediatamente.
+  //   calculateLayout(offsets, containerWidth, wordHeight, wordGap, lineGap, rtl);
 
-    if (panOrderHasChanged.value) {
-      runOnJS(emitOnDrop)();
-    }
-  };
+  //   if (panOrderHasChanged.value) {
+  //     runOnJS(emitOnDrop)();
+  //   }
+  // };
 
   const panGesture = Gesture.Pan()
     .enabled(!gesturesDisabled)
