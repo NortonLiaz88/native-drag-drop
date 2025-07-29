@@ -51,7 +51,7 @@ android {
 
   // Define uma variável que pega a versão do Java do projeto principal (ex: octavia-mobile)
   // Se não encontrar, usa a versão 11 como um padrão seguro.
-  def javaVersion = rootProject.ext.has("sourceCompatibility") ? rootProject.ext.get("sourceCompatibility") : JavaVersion.VERSION_17
+  def javaVersion = rootProject.ext.has("sourceCompatibility") ? rootProject.ext.get("sourceCompatibility") : JavaVersion.VERSION_11
 
   compileOptions {
     // Usa a variável dinâmica
