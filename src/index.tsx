@@ -35,62 +35,50 @@ const LegacyDragDrop = NativeModules.LegacyDragDrop
     );
 
 // MUDANÇA: Todas as funções wrapper agora são ASYNC e usam AWAIT
-export function multiply(
-  a: number,
-  b: number,
-  callback: (error: any, result: number) => void
-) {
-  LegacyDragDrop.multiply(a, b, callback);
+export async function multiply(a: number, b: number): Promise<number> {
+  return await LegacyDragDrop.multiply(a, b);
 }
 
 export async function move(
   input: number[],
   from: number,
-  to: number,
-  callback: (error: any, result: number) => void
+  to: number
 ): Promise<number[]> {
-  return await LegacyDragDrop.move(input, from, to, callback);
+  return await LegacyDragDrop.move(input, from, to);
 }
 
 export async function between(
   value: number,
   min: number,
   max: number,
-  inclusive: boolean,
-  callback: (error: any, result: number) => void
+  inclusive: boolean
 ): Promise<boolean> {
-  return await LegacyDragDrop.between(value, min, max, inclusive, callback);
+  return await LegacyDragDrop.between(value, min, max, inclusive);
 }
 
-export async function lastOrder(
-  orders: number[],
-  callback: (error: any, result: number) => void
-): Promise<number> {
-  return await LegacyDragDrop.lastOrder(orders, callback);
+export async function lastOrder(orders: number[]): Promise<number> {
+  return await LegacyDragDrop.lastOrder(orders);
 }
 
 export async function remove(
   orders: number[],
-  index: number,
-  callback: (error: any, result: number) => void
+  index: number
 ): Promise<number[]> {
-  return await LegacyDragDrop.remove(orders, index, callback);
+  return await LegacyDragDrop.remove(orders, index);
 }
 
 export async function reorder(
   orders: number[],
   from: number,
-  to: number,
-  callback: (error: any, result: number) => void
+  to: number
 ): Promise<number[]> {
-  return await LegacyDragDrop.reorder(orders, from, to, callback);
+  return await LegacyDragDrop.reorder(orders, from, to);
 }
 
 export async function measureWords(
-  viewTags: number[],
-  callback: (error: any, result: number) => void
+  viewTags: number[]
 ): Promise<WordMeasurement[]> {
-  return await LegacyDragDrop.measureWords(viewTags, callback);
+  return await LegacyDragDrop.measureWords(viewTags);
 }
 
 export async function calculateLayout(
@@ -100,8 +88,7 @@ export async function calculateLayout(
   wordHeight: number,
   wordGap: number,
   lineGap: number,
-  rtl: boolean,
-  callback: (error: any, result: number) => void
+  rtl: boolean
 ): Promise<LayoutPosition[]> {
   return await LegacyDragDrop.calculateLayout(
     orders,
@@ -110,8 +97,7 @@ export async function calculateLayout(
     wordHeight,
     wordGap,
     lineGap,
-    rtl,
-    callback
+    rtl
   );
 }
 // Re-exportando seus componentes React

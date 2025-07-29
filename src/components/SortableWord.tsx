@@ -189,7 +189,7 @@ const SortableWord = ({
     );
   });
 
-  const style = useAnimatedStyle(() => {
+  const animatedStyle = useAnimatedStyle(() => {
     const style: DuoWordAnimatedStyle & ViewStyle = {
       position: 'absolute',
       top: 0,
@@ -227,7 +227,7 @@ const SortableWord = ({
   });
 
   return (
-    <Animated.View style={style}>
+    <Animated.View style={animatedStyle}>
       {gesturesDisabled ? (
         <Animated.View style={StyleSheet.absoluteFill}>
           {children}

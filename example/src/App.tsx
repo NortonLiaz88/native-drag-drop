@@ -198,56 +198,68 @@ export default function App() {
         {/* ================================================================= */}
         <Button
           title="multiply 3 * 4"
-          onPress={() => {
-            multiply(3, 4, (error, result) => {
-              if (error) console.error(error);
+          onPress={async () => {
+            try {
+              const result = await multiply(3, 4);
               console.log('multiply result:', result);
-            });
+            } catch (error) {
+              console.error(error);
+            }
           }}
         />
         <Button
           title="move [0,1,2,3] from 1 to 3"
-          onPress={() => {
-            move([0, 1, 2, 3], 1, 3, (error, result) => {
-              if (error) console.error(error);
+          onPress={async () => {
+            try {
+              const result = await move([0, 1, 2, 3], 1, 3);
               console.log('move result:', result);
-            });
+            } catch (error) {
+              console.error(error);
+            }
           }}
         />
         <Button
           title="between 5 in [1,10]"
-          onPress={() => {
-            between(5, 1, 10, true, (error, result) => {
-              if (error) console.error(error);
+          onPress={async () => {
+            try {
+              const result = await between(5, 1, 10, true);
               console.log('between result:', result);
-            });
+            } catch (error) {
+              console.error(error);
+            }
           }}
         />
         <Button
           title="lastOrder [-1, 0, 1, -1]"
-          onPress={() => {
-            lastOrder([-1, 0, 1, -1], (error, result) => {
-              if (error) console.error(error);
+          onPress={async () => {
+            try {
+              const result = await lastOrder([-1, 0, 1, -1]);
               console.log('lastOrder result:', result);
-            });
+            } catch (error) {
+              console.error(error);
+            }
           }}
         />
         <Button
           title="remove index 2 from [0,1,2,3]"
-          onPress={() => {
-            remove([0, 1, 2, 3], 2, (error, result) => {
-              if (error) console.error(error);
+          onPress={async () => {
+            try {
+              const result = await remove([0, 1, 2, 3], 2);
               console.log('remove result:', result);
-            });
+            } catch (error) {
+              console.error(error);
+            }
           }}
         />
         <Button
           title="reorder [0,1,2] from 2 to 0"
-          onPress={() => {
-            reorder([0, 1, 2], 2, 0, (error, result) => {
-              if (error) console.error(error);
+          onPress={async () => {
+            try {
+              const result = await reorder([0, 1, 2], 2, 0);
               console.log('reorder result:', result);
-            });
+            } catch (error) {
+              console.error(error);
+            }
           }}
         />
       </ScrollView>

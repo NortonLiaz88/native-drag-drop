@@ -1,5 +1,6 @@
-#import <LegacyDragDropSpec/LegacyDragDropSpec.h>
+#import <React/RCTBridgeModule.h>
+#import <React/RCTEventEmitter.h>
 
-@interface LegacyDragDrop : NSObject <NativeLegacyDragDropSpec>
+@interface LegacyDragDrop : RCTEventEmitter <RCTBridgeModule>
 
 @end

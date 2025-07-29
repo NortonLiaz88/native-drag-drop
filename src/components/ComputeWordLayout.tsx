@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   type StyleProp,
   type ViewStyle,
@@ -41,6 +41,16 @@ export function ComputeWordLayout({
 }: ComputeWordLayoutProps) {
   const calculatedOffsets = useRef<LayoutRectangle[]>([]);
   const offsetStyles = useRef<StyleProp<ViewStyle>[]>([]);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // Limpa o timeout quando o componente desmonta
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <View
@@ -62,30 +72,35 @@ export function ComputeWordLayout({
                 children.length
               ) {
                 const numLines = new Set();
-                for (const index in calculatedOffsets.current) {
-                  const { y } = calculatedOffsets.current[index]!;
-                  numLines.add(y);
+                for (const keyIndex in calculatedOffsets.current) {
+                  const { y: currentY } = calculatedOffsets.current[keyIndex]!;
+                  numLines.add(currentY);
                 }
                 const numLinesSize =
                   numLines.size < 3 ? numLines.size + 1 : numLines.size;
                 const linesHeight = numLinesSize * lineHeight;
-                for (const index in calculatedOffsets.current) {
-                  const { x, y, width } = calculatedOffsets.current[index]!;
-                  const offset = offsets[index];
+                for (const keyIndex in calculatedOffsets.current) {
+                  const {
+                    x: currentX,
+                    y: currentY,
+                    width: currentWidth,
+                  } = calculatedOffsets.current[keyIndex]!;
+                  const offset = offsets[keyIndex];
                   offset!.order.value = -1;
-                  offset!.width.value = width;
-                  offset!.originalX.value = x;
-                  offset!.originalY.value = y + linesHeight + wordBankOffsetY;
+                  offset!.width.value = currentWidth;
+                  offset!.originalX.value = currentX;
+                  offset!.originalY.value =
+                    currentY + linesHeight + wordBankOffsetY;
 
-                  offsetStyles.current[index] = {
+                  offsetStyles.current[keyIndex] = {
                     position: 'absolute',
                     height: wordHeight,
-                    top: y + linesHeight + wordBankOffsetY * 2,
-                    left: x + wordGap,
-                    width: width - wordGap * 2,
+                    top: currentY + linesHeight + wordBankOffsetY * 2,
+                    left: currentX + wordGap,
+                    width: currentWidth - wordGap * 2,
                   };
                 }
-                setTimeout(() => {
+                timeoutRef.current = setTimeout(() => {
                   onLayout({
                     numLines: numLines.size,
                     wordStyles: offsetStyles.current,

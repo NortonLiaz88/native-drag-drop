@@ -1,7 +1,7 @@
 package com.legacydragdrop
 
 import com.facebook.react.bridge.Arguments
-import com.facebook.react.bridge.Callback
+import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
@@ -24,13 +24,13 @@ class LegacyDragDropModule(reactContext: ReactApplicationContext) :
   // O resultado é enviado via callback.invoke()
 
   @ReactMethod
-  fun multiply(a: Double, b: Double, callback: Callback) {
+  fun multiply(a: Double, b: Double, promise: Promise) {
     val result = a * b
-    callback.invoke(null, result)
+    promise.resolve(result)
   }
 
   @ReactMethod
-  fun move(input: ReadableArray, from: Double, to: Double, callback: Callback) {
+  fun move(input: ReadableArray, from: Double, to: Double, promise: Promise) {
     val list = mutableListOf<Double>()
     for (i in 0 until input.size()) {
       list.add(input.getDouble(i))
@@ -43,28 +43,28 @@ class LegacyDragDropModule(reactContext: ReactApplicationContext) :
     }
     val result = WritableNativeArray()
     list.forEach { result.pushDouble(it) }
-    callback.invoke(null, result)
+    promise.resolve(result)
   }
 
   @ReactMethod
-  fun between(value: Double, min: Double, max: Double, inclusive: Boolean, callback: Callback) {
+  fun between(value: Double, min: Double, max: Double, inclusive: Boolean, promise: Promise) {
     val result = if (inclusive) value in min..max else value > min && value < max
-    callback.invoke(null, result)
+    promise.resolve(result)
   }
 
   @ReactMethod
-  fun lastOrder(orders: ReadableArray, callback: Callback) {
+  fun lastOrder(orders: ReadableArray, promise: Promise) {
     var count = 0
     for (i in 0 until orders.size()) {
       if (orders.getDouble(i).toInt() != -1) {
         count++
       }
     }
-    callback.invoke(null, count.toDouble())
+    promise.resolve(count.toDouble())
   }
 
   @ReactMethod
-  fun remove(orders: ReadableArray, index: Double, callback: Callback) {
+  fun remove(orders: ReadableArray, index: Double, promise: Promise) {
     val idx = index.toInt()
     val list = mutableListOf<Int>()
     for (i in 0 until orders.size()) {
@@ -74,11 +74,11 @@ class LegacyDragDropModule(reactContext: ReactApplicationContext) :
     }
     val result = WritableNativeArray()
     list.sorted().forEachIndexed { i, _ -> result.pushDouble(i.toDouble()) }
-    callback.invoke(null, result)
+    promise.resolve(result)
   }
 
   @ReactMethod
-  fun reorder(orders: ReadableArray, from: Double, to: Double, callback: Callback) {
+  fun reorder(orders: ReadableArray, from: Double, to: Double, promise: Promise) {
     val values = mutableListOf<Int>()
     for (i in 0 until orders.size()) {
       val value = orders.getDouble(i).toInt()
@@ -92,11 +92,11 @@ class LegacyDragDropModule(reactContext: ReactApplicationContext) :
     }
     val result = WritableNativeArray()
     values.sorted().forEachIndexed { i, _ -> result.pushDouble(i.toDouble()) }
-    callback.invoke(null, result)
+    promise.resolve(result)
   }
 
   @ReactMethod
-  fun measureWords(viewTags: ReadableArray, callback: Callback) {
+  fun measureWords(viewTags: ReadableArray, promise: Promise) {
     val result = WritableNativeArray()
     for (i in 0 until viewTags.size()) {
       val tag = viewTags.getInt(i)
@@ -114,7 +114,7 @@ class LegacyDragDropModule(reactContext: ReactApplicationContext) :
         result.pushMap(map)
       }
     }
-    callback.invoke(null, result)
+    promise.resolve(result)
   }
 
   @ReactMethod
@@ -126,7 +126,7 @@ class LegacyDragDropModule(reactContext: ReactApplicationContext) :
     wordGap: Double,
     lineGap: Double,
     rtl: Boolean,
-    callback: Callback
+    promise: Promise
   ) {
     val result = Arguments.createArray()
     val orderedItems = mutableListOf<Pair<Int, Double>>()
@@ -152,7 +152,7 @@ class LegacyDragDropModule(reactContext: ReactApplicationContext) :
       layout.putDouble("y", (wordHeight + lineGap) * lineNumber + lineGap / 2)
       result.pushMap(layout)
     }
-    callback.invoke(null, result)
+    promise.resolve(result)
   }
 
   companion object {

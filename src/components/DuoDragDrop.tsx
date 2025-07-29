@@ -20,10 +20,11 @@ import type { DuoDragDropProps } from '../@types';
 import { styles } from '../utils/styles';
 
 const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
-  (props, ref) => {
+  (_props, ref) => {
+    const props = _props || {}; // <- ADICIONE ISSO
     const {
       target,
-      words,
+      words = [],
       renderWord,
       renderLines,
       renderPlaceholder,
@@ -37,6 +38,7 @@ const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
       onReady,
       onDrop,
       wordsOfKnowledge,
+      onHeightChange,
     } = props;
     const lineHeight = props.lineHeight || wordHeight * 1.2;
     const lineGap = lineHeight - wordHeight;
@@ -45,6 +47,7 @@ const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
       wordStyles: StyleProp<ViewStyle>[];
     } | null>(null);
     const [containerWidth, setContainerWidth] = useState(0);
+    const [height, setHeight] = useState(0);
 
     const wordElements = useMemo(() => {
       return words.map((word, index) => (
@@ -185,6 +188,21 @@ const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
 
     const initialized = layout && containerWidth > 0;
 
+    let numLines = 0;
+    let wordStyles: StyleProp<ViewStyle>[] = [];
+    let idealNumLines = 0;
+    let linesContainerHeight = 0;
+    let wordBankHeight = 0;
+
+    if (layout) {
+      numLines = layout.numLines;
+      wordStyles = layout.wordStyles;
+      idealNumLines = numLines < 3 ? numLines + 1 : numLines;
+      linesContainerHeight = idealNumLines * lineHeight || lineHeight;
+      wordBankHeight =
+        numLines * (wordHeight + wordGap * 2) + wordBankOffsetY * 2;
+    }
+
     useEffect(() => {
       if (initialized) {
         calculateLayout(
@@ -211,6 +229,16 @@ const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
     }, [initialized, onReady]);
 
     useEffect(() => {
+      if (onHeightChange) {
+        const newHeight = linesContainerHeight + wordBankHeight;
+        if (newHeight !== height) {
+          setHeight(newHeight);
+          onHeightChange(newHeight);
+        }
+      }
+    }, [linesContainerHeight, wordBankHeight, onHeightChange, height]);
+
+    useEffect(() => {
       setLayout(null);
     }, [wordBankOffsetY, wordBankAlignment, wordGap, wordHeight]);
 
@@ -231,15 +259,15 @@ const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
       );
     }
 
-    const { numLines, wordStyles } = layout;
-    const idealNumLines = numLines < 3 ? numLines + 1 : numLines;
-    const linesContainerHeight = idealNumLines * lineHeight || lineHeight;
-    const wordBankHeight =
-      numLines * (wordHeight + wordGap * 2) + wordBankOffsetY * 2;
-
     const PlaceholderComponent = renderPlaceholder || Placeholder;
     const LinesComponent = renderLines || Lines;
 
+    if (!Array.isArray(words) || !Array.isArray(target)) {
+      console.error(
+        '[DuoDragDrop] Invalid props: words or target are not arrays'
+      );
+      return null;
+    }
     return (
       <View style={styles.container}>
         <LinesComponent
