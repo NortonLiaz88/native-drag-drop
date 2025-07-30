@@ -154,22 +154,27 @@ export const calculateLayout = (
     return;
   }
   let lineNumber = 0;
-  let lineBreak = 0;
+  let currentLineX = 0; // Initialize running sum for the current line
   for (let i = 0; i < offsets.length; i++) {
     const offset = offsets[i];
-    const total = offsets
-      .slice(lineBreak, i)
-      .reduce((acc, o) => acc + o.width.value + wordGap / 2, 0);
-    if (total + offset!.width.value > containerWidth) {
+
+    // Calculate the width of the current word including its gap
+    const wordWidthWithGap = offset!.width.value + wordGap / 2;
+
+    if (currentLineX + wordWidthWithGap > containerWidth) {
+      // If adding the current word exceeds container width, move to the next line
       lineNumber += 1;
-      lineBreak = i;
-      offset!.x.value = rtl ? containerWidth - offset!.width.value : 0;
-    } else {
-      offset!.x.value = rtl
-        ? containerWidth - total - offset!.width.value
-        : total;
+      currentLineX = 0; // Reset running sum for the new line
     }
+
+    // Set x and y coordinates for the current word
+    offset!.x.value = rtl
+      ? containerWidth - currentLineX - offset!.width.value
+      : currentLineX;
     offset!.y.value = (wordHeight + lineGap) * lineNumber + lineGap / 2;
+
+    // Update running sum for the current line
+    currentLineX += wordWidthWithGap;
   }
 };
 
