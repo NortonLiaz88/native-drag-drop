@@ -82,6 +82,8 @@ export interface DuoDragDropProps {
     | null;
   /** Allows user to modify animation of the word while it's animating. NOTE: this must be a worklet */
   animatedStyleWorklet?: DuoAnimatedStyleWorklet;
+  /** Duration of the animation in milliseconds. Default: 150 */
+  animationDuration?: number;
   /** Runs when the drag-and-drop has rendered */
   onReady?: (ready: boolean) => void;
   /** Called when a user taps or drags a word to its destination */

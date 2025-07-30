@@ -25,6 +25,7 @@ import type {
 
 export interface SortableWordProps {
   animatedStyleWorklet?: DuoAnimatedStyleWorklet;
+  animationDuration: number;
   onDrop?: OnDropFunction;
   offsets: Offset[];
   children: ReactElement<{ id: number }>;
@@ -53,6 +54,7 @@ const SortableWord = ({
   wordBankOffsetY,
   lineGap,
   onDrop,
+  animationDuration,
 }: SortableWordProps) => {
   const offset = offsets[index];
   const isGestureActive = useSharedValue(false);
@@ -170,7 +172,7 @@ const SortableWord = ({
     }
     return withTiming(
       isInBank.value ? offset!.originalX.value : offset!.x.value,
-      { duration: 250 },
+      { duration: animationDuration },
       () => (isAnimating.value = false)
     );
   });
@@ -184,7 +186,7 @@ const SortableWord = ({
       isInBank.value
         ? offset!.originalY.value + wordBankOffsetY
         : offset!.y.value,
-      { duration: 250 },
+      { duration: animationDuration },
       () => (isAnimating.value = false)
     );
   });

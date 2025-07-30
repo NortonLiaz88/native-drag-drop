@@ -35,6 +35,7 @@ const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
       wordBankOffsetY = 20,
       wordHeight = 45,
       animatedStyleWorklet,
+      animationDuration = 150,
       onReady,
       onDrop,
       wordsOfKnowledge,
@@ -293,6 +294,7 @@ const DuoDragDrop = React.forwardRef<DuoDragDropRef, DuoDragDropProps>(
               wordGap={wordGap}
               wordBankOffsetY={wordBankOffsetY}
               animatedStyleWorklet={animatedStyleWorklet}
+              animationDuration={animationDuration}
               onDrop={onDrop}
             >
               {child}
