@@ -86,6 +86,7 @@ export default function App() {
         <View style={styles.dragDropContainer}>
           {/* O componente DuoDragDrop não precisa de mudanças aqui */}
           <DuoDragDrop
+            animationDuration={100}
             target={words}
             ref={duoDragDropRef}
             words={words}

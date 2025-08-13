@@ -14,14 +14,20 @@ export type LayoutPosition = {
 };
 
 export interface Spec extends TurboModule {
-  multiply(a: number, b: number): number;
+  // Todas as funções devem retornar uma Promise, espelhando o código nativo.
+  multiply(a: number, b: number): Promise<number>;
 
-  move(input: number[], from: number, to: number): number[];
-  between(value: number, min: number, max: number, inclusive: boolean): boolean;
-  lastOrder(orders: number[]): number;
-  remove(orders: number[], index: number): number[];
-  reorder(orders: number[], from: number, to: number): number[];
-  measureWords(viewTags: number[]): WordMeasurement[];
+  move(input: number[], from: number, to: number): Promise<number[]>;
+  between(
+    value: number,
+    min: number,
+    max: number,
+    inclusive: boolean
+  ): Promise<boolean>;
+  lastOrder(orders: number[]): Promise<number>;
+  remove(orders: number[], index: number): Promise<number[]>;
+  reorder(orders: number[], from: number, to: number): Promise<number[]>;
+  measureWords(viewTags: number[]): Promise<WordMeasurement[]>;
   calculateLayout(
     orders: number[],
     widths: number[],
@@ -30,7 +36,7 @@ export interface Spec extends TurboModule {
     wordGap: number,
     lineGap: number,
     rtl: boolean
-  ): LayoutPosition[];
+  ): Promise<LayoutPosition[]>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('LegacyDragDrop');
